@@ -102,12 +102,27 @@ st.markdown("<div style='text-align: center; color: #6c757d; margin-bottom: 30px
 # ============================================
 st.markdown('<p class="section-header">1. Spesifikasi Asset</p>', unsafe_allow_html=True)
 
+# Di Section 1: Asset Specification
 col1, col2, col3 = st.columns(3)
 
 with col1:
     st.markdown("#### 🔧 Motor Specifications")
     motor_kw = st.number_input("Motor Power (kW)", 1, 1000, 315, 
                               help="Dari nameplate motor (IEC 60034-1)")
+    
+    # Auto-detect machine group berdasarkan power
+    if motor_kw <= 15:
+        machine_group = "Group 1 (≤15 kW)"
+        group_num = 1
+    elif motor_kw <= 75:
+        machine_group = "Group 2 (15-75 kW) - Small Product Pumps"
+        group_num = 2
+    else:
+        machine_group = "Group 3 (>75 kW) - BBM Transfer Pumps"
+        group_num = 3
+    
+    st.caption(f"Auto-detected: {machine_group}")
+    
     motor_rpm = st.number_input("Motor RPM", 600, 3600, 1485,
                                help="Dari nameplate motor")
     flc = st.number_input("Full Load Current (A)", 1, 2000, 545,
