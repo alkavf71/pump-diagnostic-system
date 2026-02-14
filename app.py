@@ -1,7 +1,7 @@
 """
 Pump Diagnostic System - Pertamina Patra Niaga
 SINGLE PAGE VERSION - All inputs in one page, diagnosis at bottom
-FIXED: Complete hydraulic/electrical analysis + transparent decision traceability
+FIXED: Phase Instability REMOVED + Compliance Status integrated into each section
 """
 
 import streamlit as st
@@ -99,6 +99,17 @@ st.markdown("""
         font-family: monospace;
         font-size: 0.95rem;
     }
+    .compliance-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        margin-left: 8px;
+    }
+    .compliance-compliant { background-color: #d4edda; color: #155724; }
+    .compliance-warning { background-color: #fff3cd; color: #856404; }
+    .compliance-noncompliant { background-color: #f8d7da; color: #721c24; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -192,7 +203,7 @@ with col5:
     st.markdown("#### Pump (Driven)")
     pump_h_de = st.number_input("Pump H - DE (mm/s)", 0.0, 20.0, 1.85, key="p_h_de")
     pump_h_nde = st.number_input("Pump H - NDE (mm/s)", 0.0, 20.0, 1.75, key="p_h_nde")
-    pump_v_de = st.number_input("Pump V - DE (mm/s)", 0.0, 20.0, 5.20, key="p_v_de")  # Higher to trigger Zone C for Group 2
+    pump_v_de = st.number_input("Pump V - DE (mm/s)", 0.0, 20.0, 5.20, key="p_v_de")
     pump_v_nde = st.number_input("Pump V - NDE (mm/s)", 0.0, 20.0, 4.80, key="p_v_nde")
     pump_a_de = st.number_input("Pump A - DE (mm/s)", 0.0, 20.0, 0.85, key="p_a_de")
     pump_a_nde = st.number_input("Pump A - NDE (mm/s)", 0.0, 20.0, 0.90, key="p_a_nde")
@@ -201,24 +212,27 @@ with col6:
     st.markdown("#### High Frequency Bands (0.5-16 kHz)")
     st.caption("Diukur di DE saja (sisi beban) - Pump DE untuk bearing defect")
     hf_motor_de = st.number_input("Motor DE HF (g)", 0.0, 10.0, 0.25, key="hf_motor")
-    hf_pump_de = st.number_input("Pump DE HF (g)", 0.0, 10.0, 0.95, key="hf_pump")  # Higher to trigger bearing defect
+    hf_pump_de = st.number_input("Pump DE HF (g)", 0.0, 10.0, 0.95, key="hf_pump")
     
     st.markdown("#### Bearing Temperature (°C)")
     st.caption("Diukur di housing bearing dengan infrared thermometer")
     temp_motor_de = st.number_input("Motor DE Temp", 0, 150, 62, key="tm_de")
     temp_motor_nde = st.number_input("Motor NDE Temp", 0, 150, 64, key="tm_nde")
-    temp_pump_de = st.number_input("Pump DE Temp", 0, 150, 88, key="tp_de")  # Higher to trigger temp rise
+    temp_pump_de = st.number_input("Pump DE Temp", 0, 150, 88, key="tp_de")
     temp_pump_nde = st.number_input("Pump NDE Temp", 0, 150, 70, key="tp_nde")
 
 # ============================================
-# SECTION 3: FFT Spectrum Analysis
+# SECTION 3: FFT Spectrum Analysis (REVISED - NO PHASE)
 # ============================================
 st.markdown('<p class="section-header">3. FFT Spectrum Analysis (Adash Vibrio 4900)</p>', unsafe_allow_html=True)
 st.info("""
 📍 **LOKASI PENGUKURAN YANG BENAR (ISO 13373-2 Clause 5.4.2):**
 • **Diukur di: PUMP DE (Driven End) pada arah HORIZONTAL**
 • **Range frekuensi: 1-200 Hz**
-• **Alasan:** DE bearing menerima beban hidrolik terbesar → fault signature paling jelas
+• **PENTING**: Vibrio 4900 **TIDAK mengukur phase angle**. 
+  Diagnosa electrical vs mechanical unbalance berdasarkan:
+  - 2×Line Freq (100 Hz) + voltage imbalance → Electrical Unbalance
+  - 1X dominant + voltage normal → Mechanical Unbalance
 """)
 
 col7, col8, col9 = st.columns(3)
@@ -226,7 +240,7 @@ col7, col8, col9 = st.columns(3)
 with col7:
     st.markdown("#### Peak 1 (1X - Fundamental)")
     peak1_freq = st.number_input("Frekuensi Peak 1 (Hz)", 0.0, 200.0, 24.8, key="p1f")
-    peak1_amp = st.number_input("Amplitudo Peak 1 (mm/s)", 0.0, 20.0, 3.8, key="p1a")  # Higher for unbalance
+    peak1_amp = st.number_input("Amplitudo Peak 1 (mm/s)", 0.0, 20.0, 3.8, key="p1a")
 
 with col8:
     st.markdown("#### Peak 2 (2X - Harmonik)")
@@ -235,17 +249,13 @@ with col8:
 
 with col9:
     st.markdown("#### Peak 3 (Bearing/2LF)")
-    peak3_freq = st.number_input("Frekuensi Peak 3 (Hz)", 0.0, 200.0, 76.0, key="p3f")  # BPFO candidate
+    peak3_freq = st.number_input("Frekuensi Peak 3 (Hz)", 0.0, 200.0, 76.0, key="p3f")
     peak3_amp = st.number_input("Amplitudo Peak 3 (mm/s)", 0.0, 20.0, 0.7, key="p3a")
 
-# Additional parameters
-col10, col11 = st.columns(2)
-with col10:
-    phase_instability = st.number_input("Phase Instability (°)", 0, 90, 28,  # Higher for electrical
-                                       help="±5° = stable (mechanical), >20° = unstable (electrical)")
-with col11:
-    displacement_peak = st.number_input("Displacement Peak (μm)", 0, 200, 68,
-                                       help="Peak-to-peak 2-100 Hz")
+# Additional parameters (Displacement only - Phase REMOVED)
+st.markdown("#### Additional Parameters (Optional)")
+displacement_peak = st.number_input("Displacement Peak (μm)", 0, 200, 68,
+                                   help="Peak-to-peak 2-100 Hz (optional - untuk looseness detection)")
 
 # ============================================
 # SECTION 4: Hydraulic & Electrical Parameters
@@ -256,33 +266,33 @@ col12, col13, col14 = st.columns(3)
 
 with col12:
     st.markdown("#### Hydraulic Parameters")
-    actual_flow = st.number_input("Actual Flow (m³/hr)", 0.0, 1000.0, 35.0)  # Low flow for cavitation risk
-    p_suc = st.number_input("Suction Pressure (bar g)", 0.0, 50.0, 2.5)  # Low suction for cavitation
+    actual_flow = st.number_input("Actual Flow (m³/hr)", 0.0, 1000.0, 35.0)
+    p_suc = st.number_input("Suction Pressure (bar g)", 0.0, 50.0, 2.5)
     p_dis = st.number_input("Discharge Pressure (bar g)", 0.0, 100.0, 10.2)
 
 with col13:
     st.markdown("#### Electrical - Voltage (V)")
     voltage_r = st.number_input("Voltage R", 0.0, 1000.0, 402.0)
-    voltage_s = st.number_input("Voltage S", 0.0, 1000.0, 389.0)  # Imbalance
+    voltage_s = st.number_input("Voltage S", 0.0, 1000.0, 389.0)
     voltage_t = st.number_input("Voltage T", 0.0, 1000.0, 405.0)
 
 with col14:
     st.markdown("#### Electrical - Current (A)")
     current_r = st.number_input("Current R", 0.0, 1000.0, 76.0)
-    current_s = st.number_input("Current S", 0.0, 1000.0, 81.0)  # Imbalance
+    current_s = st.number_input("Current S", 0.0, 1000.0, 81.0)
     current_t = st.number_input("Current T", 0.0, 1000.0, 78.0)
-    actual_rpm = st.number_input("Actual RPM (measured)", 0, 3600, 1472, 
+    actual_rpm = st.number_input("Actual RPM (measured)", 0, 3600, 1472,
                                 help="Dari tachometer laser - untuk hitung motor slip")
 
 # ============================================
-# SECTION 5: Generate Diagnosis (BOTTOM) - COMPLETE ANALYSIS
+# SECTION 5: Generate Diagnosis (BOTTOM) - REVISED
 # ============================================
 st.markdown('<p class="section-header">5. Hasil Diagnosa Komprehensif</p>', unsafe_allow_html=True)
 
 if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True, key="diagnose_btn"):
     with st.spinner("Menganalisis data dengan ISO 10816-3 + API 610 + IEC 60034-1..."):
         # ============================================
-        # STEP 1: Calculate ALL Parameters (Transparent)
+        # STEP 1: Calculate ALL Parameters (NO PHASE)
         # ============================================
         # Vibration averages
         motor_h_avr = (motor_h_de + motor_h_nde) / 2
@@ -297,7 +307,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         directions = ["Motor H", "Motor V", "Motor A", "Pump H", "Pump V", "Pump A"]
         max_direction = directions[all_velocities.index(max_velocity)]
         
-        # Electrical calculations
+        # Electrical calculations (NO PHASE USED)
         v_avg = (voltage_r + voltage_s + voltage_t) / 3
         v_imbalance = max(abs(voltage_r - v_avg), abs(voltage_s - v_avg), abs(voltage_t - v_avg)) / v_avg * 100 if v_avg > 0 else 0
         
@@ -311,14 +321,11 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         slip_percent = (slip_rpm / motor_rpm) * 100 if motor_rpm > 0 else 0
         
         # Hydraulic calculations (API 610)
-        # NPSHa calculation for BBM (simplified but accurate)
-        # NPSHa = (P_suc * 10.197) / ρ + (v²/2g) - h_vapor - h_friction
-        # For BBM at 35°C: ρ ≈ 850 kg/m³, vapor pressure ≈ 0.5 m
         rho_bbm = 850  # kg/m³
         vapor_pressure_m = 0.5  # m (approx for BBM at 35°C)
         friction_loss_m = 0.3  # m (approx suction line loss)
         
-        npsha = (p_suc * 10.197) / rho_bbm * 1000 - vapor_pressure_m - friction_loss_m  # Simplified
+        npsha = (p_suc * 10.197) / rho_bbm * 1000 - vapor_pressure_m - friction_loss_m
         npsha_margin = npsha - npshr
         
         # BEP deviation
@@ -375,8 +382,12 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             zone_status = "UNACCEPTABLE - Vibration causes damage (ISO 10816-3 Clause 5.4)"
             zone_color = "error"
         
+        # Calculate ISO 10816-3 compliance status
+        iso_10816_3_status = "COMPLIANT" if zone in ["A", "B"] else "WARNING" if zone == "C" else "NON-COMPLIANT"
+        iso_10816_3_emoji = "✅" if iso_10816_3_status == "COMPLIANT" else "⚠️" if iso_10816_3_status == "WARNING" else "❌"
+        
         # ============================================
-        # STEP 3: Multi-Parameter Fault Detection
+        # STEP 3: Multi-Parameter Fault Detection (NO PHASE)
         # ============================================
         faults = []
         hydraulic_issues = []
@@ -389,8 +400,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{v_imbalance:.1f}%",
                 "threshold": ">5.0%",
                 "severity": "CRITICAL",
-                "standard": "IEC 60034-1 §6.3",
-                "calculation": f"V_avg = ({voltage_r}+{voltage_s}+{voltage_t})/3 = {v_avg:.1f}V\nMax deviation = {max(abs(voltage_r-v_avg), abs(voltage_s-v_avg), abs(voltage_t-v_avg)):.1f}V\nImbalance = {max(abs(voltage_r-v_avg), abs(voltage_s-v_avg), abs(voltage_t-v_avg)):.1f}/{v_avg:.1f} × 100% = {v_imbalance:.1f}%"
+                "standard": "IEC 60034-1 §6.3"
             })
         elif v_imbalance > 2.0:
             electrical_issues.append({
@@ -398,8 +408,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{v_imbalance:.1f}%",
                 "threshold": ">2.0%",
                 "severity": "WARNING",
-                "standard": "IEC 60034-1 §6.3",
-                "calculation": f"V_avg = ({voltage_r}+{voltage_s}+{voltage_t})/3 = {v_avg:.1f}V\nImbalance = {v_imbalance:.1f}% > 2% limit"
+                "standard": "IEC 60034-1 §6.3"
             })
         
         if i_imbalance > 10.0:
@@ -408,8 +417,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{i_imbalance:.1f}%",
                 "threshold": ">10.0%",
                 "severity": "CRITICAL",
-                "standard": "NEMA MG-1 §14.32",
-                "calculation": f"I_avg = ({current_r}+{current_s}+{current_t})/3 = {i_avg:.1f}A\nImbalance = {i_imbalance:.1f}% > 10% limit"
+                "standard": "NEMA MG-1 §14.32"
             })
         elif i_imbalance > 5.0:
             electrical_issues.append({
@@ -417,8 +425,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{i_imbalance:.1f}%",
                 "threshold": ">5.0%",
                 "severity": "WARNING",
-                "standard": "NEMA MG-1 §14.32",
-                "calculation": f"I_avg = {i_avg:.1f}A\nImbalance = {i_imbalance:.1f}% > 5% limit"
+                "standard": "NEMA MG-1 §14.32"
             })
         
         if slip_percent > 3.0:
@@ -427,8 +434,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{slip_percent:.1f}%",
                 "threshold": ">3.0%",
                 "severity": "WARNING",
-                "standard": "IEC 60034-1 Clause 5.2",
-                "calculation": f"Slip = ({motor_rpm} - {actual_rpm}) / {motor_rpm} × 100% = {slip_percent:.1f}% > 3% limit"
+                "standard": "IEC 60034-1 Clause 5.2"
             })
         
         if load_factor > 110:
@@ -437,8 +443,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{load_factor:.0f}%",
                 "threshold": ">110%",
                 "severity": "CRITICAL",
-                "standard": "IEC 60034-1 Table 3",
-                "calculation": f"Load Factor = {i_avg:.1f}A / {flc}A × 100% = {load_factor:.0f}% > 110% FLC"
+                "standard": "IEC 60034-1 Table 3"
             })
         elif load_factor < 40:
             electrical_issues.append({
@@ -446,9 +451,12 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{load_factor:.0f}%",
                 "threshold": "<40%",
                 "severity": "WARNING",
-                "standard": "API 610 Clause 7.3",
-                "calculation": f"Load Factor = {load_factor:.0f}% < 40% FLC → possible cavitation/recirculation"
+                "standard": "API 610 Clause 7.3"
             })
+        
+        # Calculate IEC 60034-1 compliance status
+        iec_60034_1_status = "COMPLIANT" if v_imbalance <= 2.0 else "WARNING" if v_imbalance <= 5.0 else "NON-COMPLIANT"
+        iec_60034_1_emoji = "✅" if iec_60034_1_status == "COMPLIANT" else "⚠️" if iec_60034_1_status == "WARNING" else "❌"
         
         # === HYDRAULIC ANALYSIS ===
         if npsha_margin < 0.3:
@@ -457,8 +465,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{npsha_margin:.2f}m",
                 "threshold": "<0.3m",
                 "severity": "CRITICAL",
-                "standard": "API 610 Clause 7.3.2",
-                "calculation": f"NPSHa = ({p_suc} bar × 10.197) / 850 kg/m³ × 1000 - 0.5m - 0.3m = {npsha:.2f}m\nMargin = {npsha:.2f}m - {npshr}m = {npsha_margin:.2f}m < 0.6m safety margin"
+                "standard": "API 610 Clause 7.3.2"
             })
         elif npsha_margin < 0.6:
             hydraulic_issues.append({
@@ -466,8 +473,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{npsha_margin:.2f}m",
                 "threshold": "<0.6m",
                 "severity": "WARNING",
-                "standard": "API 610 Clause 7.3.2",
-                "calculation": f"NPSHa = {npsha:.2f}m (calculated)\nNPSHr = {npshr}m (from pump curve)\nMargin = {npsha_margin:.2f}m < 0.6m safety margin"
+                "standard": "API 610 Clause 7.3.2"
             })
         
         if bep_deviation > 30:
@@ -476,8 +482,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{bep_deviation:.0f}%",
                 "threshold": ">30%",
                 "severity": "CRITICAL",
-                "standard": "API 610 Clause 7.3",
-                "calculation": f"BEP Deviation = |{actual_flow} - {bep_flow}| / {bep_flow} × 100% = {bep_deviation:.0f}% > 30% limit"
+                "standard": "API 610 Clause 7.3"
             })
         elif bep_deviation > 20:
             hydraulic_issues.append({
@@ -485,8 +490,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "value": f"{bep_deviation:.0f}%",
                 "threshold": ">20%",
                 "severity": "WARNING",
-                "standard": "API 610 Clause 7.3",
-                "calculation": f"Flow = {actual_flow} m³/hr vs BEP = {bep_flow} m³/hr\nDeviation = {bep_deviation:.0f}% > 20% limit"
+                "standard": "API 610 Clause 7.3"
             })
         
         # Cavitation risk assessment
@@ -503,12 +507,15 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             if bep_deviation > 20:
                 cavitation_evidence.append(f"BEP deviation {bep_deviation:.0f}% > 20%")
         
-        # === FFT FAULT DETECTION ===
-        # STEP 3: FFT FAULT DETECTION (REVISED - Tanpa Phase)
+        # Calculate API 610 compliance status
+        api_610_status = "COMPLIANT" if npsha_margin >= 0.6 else "WARNING" if npsha_margin >= 0.3 else "NON-COMPLIANT"
+        api_610_emoji = "✅" if api_610_status == "COMPLIANT" else "⚠️" if api_610_status == "WARNING" else "❌"
+        
+        # === FFT FAULT DETECTION (NO PHASE USED) ===
         is_2lf_dominant = abs(peak3_freq - 100.0) < 5.0 and peak3_amp > 0.5 * peak1_amp
         is_1x_dominant = abs(peak1_freq - fundamental) < 0.1 * fundamental and peak1_amp > 0.8 * (peak1_amp + peak2_amp + peak3_amp)
         
-        # Electrical Unbalance Detection (tanpa phase)
+        # Electrical Unbalance Detection (NO PHASE)
         if is_2lf_dominant and v_imbalance > 2.0:
             faults.append({
                 "type": "ELECTRICAL UNBALANCE",
@@ -516,13 +523,13 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "evidence": [
                     f"2×Line Frequency dominant di {peak3_freq:.1f} Hz ({peak3_amp:.1f} mm/s)",
                     f"Voltage imbalance {v_imbalance:.1f}% > 2% limit (IEC 60034-1 §6.3)",
-                    "Diagnosis based on 2LF signature + voltage imbalance (phase not required for screening)"
+                    "Diagnosis based on 2LF signature + voltage imbalance (phase measurement not available on Vibrio 4900)"
                 ],
                 "severity": "WARNING",
                 "standard": "ISO 13373-2 Clause 5.4.3 + IEC 60034-1 §6.3"
             })
         
-        # Mechanical Unbalance Detection (tanpa phase)
+        # Mechanical Unbalance Detection (NO PHASE)
         elif is_1x_dominant and v_imbalance < 2.0:
             faults.append({
                 "type": "MECHANICAL UNBALANCE",
@@ -530,7 +537,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 "evidence": [
                     f"1X dominant di {peak1_freq:.1f} Hz ({peak1_amp:.1f} mm/s, {peak1_amp/(peak1_amp+peak2_amp+peak3_amp)*100:.0f}% RMS)",
                     f"Voltage imbalance {v_imbalance:.1f}% < 2% limit",
-                    "Diagnosis based on 1X dominance + normal voltage (phase not required for screening)"
+                    "Diagnosis based on 1X dominance + normal voltage (phase measurement not required for screening)"
                 ],
                 "severity": "WARNING",
                 "standard": "ISO 1940-1:2003 G2.5"
@@ -579,6 +586,10 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         primary_fault = faults[0]
         
+        # Calculate ISO 15243 compliance status
+        iso_15243_status = "COMPLIANT" if hf_pump_de <= 0.7 else "STAGE 2" if hf_pump_de <= 1.5 else "STAGE 3"
+        iso_15243_emoji = "✅" if iso_15243_status == "COMPLIANT" else "⚠️" if iso_15243_status == "STAGE 2" else "❌"
+        
         # ============================================
         # STEP 4: RISK ASSESSMENT (Severity-Based)
         # ============================================
@@ -610,7 +621,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             mtbf_days = 180
         
         # ============================================
-        # DISPLAY RESULTS - COMPLETE & TRANSPARENT
+        # DISPLAY RESULTS - REVISED (NO COMPLIANCE SECTION)
         # ============================================
         st.markdown('<div class="result-section">', unsafe_allow_html=True)
         
@@ -633,7 +644,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         st.markdown("---")
         
-        # Vibration Severity
+        # Vibration Severity (WITH COMPLIANCE BADGE)
         st.markdown("### 📏 Vibration Severity (ISO 10816-3:2001)")
         
         col15, col16, col17 = st.columns(3)
@@ -646,6 +657,8 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
                 st.error(f"Zone {zone}")
             else:
                 st.info(f"Zone {zone}")
+            # Compliance badge
+            st.markdown(f'<span class="compliance-badge compliance-{iso_10816_3_status.lower()}">{iso_10816_3_emoji} ISO 10816-3: {iso_10816_3_status}</span>', unsafe_allow_html=True)
         with col16:
             st.metric("Max Velocity", f"{max_velocity:.2f} mm/s")
         with col17:
@@ -658,7 +671,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         st.markdown("---")
         
-        # HYDRAULIC ANALYSIS SECTION (NEW - TRANSPARENT)
+        # HYDRAULIC ANALYSIS (WITH COMPLIANCE BADGE)
         st.markdown("### 💧 Hydraulic Performance Analysis (API 610 Clause 7.3)")
         
         col18, col19, col20 = st.columns(3)
@@ -672,6 +685,8 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             st.metric("NPSHa Margin", f"{npsha_margin:.2f} m", 
                      delta="-0.6m" if npsha_margin < 0.6 else None,
                      delta_color="inverse")
+            # Compliance badge
+            st.markdown(f'<span class="compliance-badge compliance-{api_610_status.lower()}">{api_610_emoji} API 610: {api_610_status}</span>', unsafe_allow_html=True)
         
         st.markdown(f"**Cavitation Risk: {'🔴 HIGH' if cavitation_risk == 'HIGH' else '🟠 MEDIUM' if cavitation_risk == 'MEDIUM' else '🟢 LOW'}**")
         if cavitation_evidence:
@@ -693,13 +708,13 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         if hydraulic_issues:
             st.warning("⚠️ **Hydraulic Issues Detected**")
-            for issue in hydraulic_issues[:2]:  # Top 2 issues
+            for issue in hydraulic_issues[:2]:
                 st.write(f"• **{issue['parameter']}**: {issue['value']} (threshold: {issue['threshold']})")
                 st.caption(f"Standard: {issue['standard']}")
         
         st.markdown("---")
         
-        # ELECTRICAL ANALYSIS SECTION (NEW - TRANSPARENT)
+        # ELECTRICAL ANALYSIS (WITH COMPLIANCE BADGE)
         st.markdown("### ⚡ Electrical Performance Analysis (IEC 60034-1)")
         
         col21, col22, col23, col24 = st.columns(4)
@@ -707,6 +722,8 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             st.metric("Voltage Imbalance", f"{v_imbalance:.1f}%", 
                      delta=">2%" if v_imbalance > 2.0 else None,
                      delta_color="inverse")
+            # Compliance badge
+            st.markdown(f'<span class="compliance-badge compliance-{iec_60034_1_status.lower()}">{iec_60034_1_emoji} IEC 60034-1: {iec_60034_1_status}</span>', unsafe_allow_html=True)
         with col22:
             st.metric("Current Imbalance", f"{i_imbalance:.1f}%", 
                      delta=">5%" if i_imbalance > 5.0 else None,
@@ -722,7 +739,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         if electrical_issues:
             severity_map = {"CRITICAL": "🔴", "WARNING": "🟠", "INFO": "🟢"}
-            for issue in electrical_issues[:3]:  # Top 3 issues
+            for issue in electrical_issues[:3]:
                 emoji = severity_map.get(issue['severity'], "🔵")
                 st.write(f"{emoji} **{issue['parameter']}**: {issue['value']} (threshold: {issue['threshold']})")
                 st.caption(f"Standard: {issue['standard']}")
@@ -759,8 +776,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             st.markdown(f"""
             <div class="calculation-box">
             Fundamental Frequency (1X) = RPM / 60 = {motor_rpm} / 60 = <b>{fundamental:.2f} Hz</b><br>
-            Expected 2X = 2 × {fundamental:.2f} = <b>{2*fundamental:.2f} Hz</b><br>
-            Expected 3X = 3 × {fundamental:.2f} = <b>{3*fundamental:.2f} Hz</b><br><br>
+            Expected 2X = 2 × {fundamental:.2f} = <b>{2*fundamental:.2f} Hz</b><br><br>
             
             Peak 1: {peak1_freq:.1f} Hz → {peak1_amp:.1f} mm/s ({'✅ matches 1X' if abs(peak1_freq-fundamental) < 0.1*fundamental else '❌ not 1X'})<br>
             Peak 2: {peak2_freq:.1f} Hz → {peak2_amp:.1f} mm/s ({'✅ matches 2X' if abs(peak2_freq-2*fundamental) < 0.1*2*fundamental else '❌ not 2X'})<br>
@@ -770,7 +786,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         st.markdown("---")
         
-        # Bearing Condition
+        # Bearing Condition (WITH COMPLIANCE BADGE)
         st.markdown("### ⚙️ Bearing Condition (ISO 15243:2017)")
         
         col25, col26, col27 = st.columns(3)
@@ -778,6 +794,8 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             st.metric("Pump DE HF", f"{hf_pump_de:.2f} g", 
                      delta=">0.7g" if hf_pump_de > 0.7 else None,
                      delta_color="inverse")
+            # Compliance badge
+            st.markdown(f'<span class="compliance-badge compliance-{iso_15243_status.lower()}">{iso_15243_emoji} ISO 15243: {iso_15243_status}</span>', unsafe_allow_html=True)
         with col26:
             st.metric("Temp Rise", f"{temp_rise_pump:.0f}°C", 
                      delta=">40°C" if temp_rise_pump > 40 else None,
@@ -838,34 +856,11 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             st.write(f"• Inspeksi berikutnya: {timeline}")
             st.write("• Lanjutkan pemantauan rutin sesuai jadwal")
         
-        st.markdown("---")
-        
-        # Compliance Status
-        st.markdown("### 📋 Compliance Status (AIM-004 Format)")
-        
-        col31, col32, col33, col34 = st.columns(4)
-        
-        with col31:
-            iso_status = "✅ COMPLIANT" if zone in ["A", "B"] else "⚠️ WARNING" if zone == "C" else "❌ NON-COMPLIANT"
-            st.metric("ISO 10816-3", iso_status)
-        
-        with col32:
-            iec_status = "✅ COMPLIANT" if v_imbalance <= 2.0 else "⚠️ WARNING" if v_imbalance <= 5.0 else "❌ NON-COMPLIANT"
-            st.metric("IEC 60034-1", iec_status)
-        
-        with col33:
-            api_status = "✅ COMPLIANT" if npsha_margin >= 0.6 else "⚠️ WARNING" if npsha_margin >= 0.3 else "❌ NON-COMPLIANT"
-            st.metric("API 610", api_status)
-        
-        with col34:
-            iso15243_status = "✅ COMPLIANT" if hf_pump_de <= 0.7 else "⚠️ STAGE 2" if hf_pump_de <= 1.5 else "❌ STAGE 3"
-            st.metric("ISO 15243", iso15243_status)
-        
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Export section
         st.markdown("### 📥 Export Report")
-        col35, col36 = st.columns(2)
+        col31, col32 = st.columns(2)
         
         report_text = f"""
 PUMP DIAGNOSTIC REPORT - PERTAMINA PATRA NIAGA
@@ -887,7 +882,7 @@ MTBF Estimate : {mtbf_days} days
 
 VIBRATION SEVERITY (ISO 10816-3:2001)
 --------------------------------------
-Zone          : {zone}
+Zone          : {zone} ({iso_10816_3_status})
 Max Velocity  : {max_velocity:.2f} mm/s
 Direction     : {max_direction}
 Machine Group : {machine_group}
@@ -901,13 +896,13 @@ Actual Flow   : {actual_flow:.1f} m³/hr
 BEP Deviation : {bep_deviation:.0f}%
 NPSHa         : {npsha:.2f} m
 NPSHr         : {npshr:.2f} m
-NPSHa Margin  : {npsha_margin:.2f} m
+NPSHa Margin  : {npsha_margin:.2f} m ({api_610_status})
 Cavitation Risk: {cavitation_risk}
 
 ELECTRICAL ANALYSIS (IEC 60034-1)
 ----------------------------------
 Voltage R/S/T : {voltage_r}/{voltage_s}/{voltage_t} V
-Voltage Imbalance: {v_imbalance:.1f}%
+Voltage Imbalance: {v_imbalance:.1f}% ({iec_60034_1_status})
 Current R/S/T : {current_r}/{current_s}/{current_t} A
 Current Imbalance: {i_imbalance:.1f}%
 Load Factor   : {load_factor:.0f}%
@@ -917,7 +912,7 @@ Actual RPM    : {actual_rpm} RPM
 
 BEARING CONDITION (ISO 15243:2017)
 -----------------------------------
-Pump DE HF    : {hf_pump_de:.2f} g
+Pump DE HF    : {hf_pump_de:.2f} g ({iso_15243_status})
 Temp Rise     : {temp_rise_pump:.0f}°C
 Temp Gradient : {pump_temp_gradient:.0f}°C
 
@@ -927,18 +922,11 @@ Risk Level    : {risk_level}
 Timeline      : {timeline}
 MTBF Estimate : {mtbf_days} days
 
-COMPLIANCE STATUS
------------------
-ISO 10816-3   : {iso_status}
-IEC 60034-1   : {iec_status} (V_imb: {v_imbalance:.1f}%)
-API 610       : {api_status} (NPSHa margin: {npsha_margin:.2f}m)
-ISO 15243     : {iso15243_status}
-
 Report Generated : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Standards       : ISO 10816-3:2001, API 610 Ed.11, IEC 60034-1:2017, ISO 15243:2017
         """
         
-        with col35:
+        with col31:
             st.download_button(
                 "📄 Download Full Report",
                 report_text,
@@ -947,16 +935,16 @@ Standards       : ISO 10816-3:2001, API 610 Ed.11, IEC 60034-1:2017, ISO 15243:2
                 use_container_width=True
             )
         
-        with col36:
-            st.caption("Report includes all calculated parameters with traceability to standards")
+        with col32:
+            st.caption("Report includes compliance status integrated into each section")
 
 # Footer
 st.markdown("""
 <div class="footer">
-    <p>Pump Diagnostic System v2.1 | Pertamina Patra Niaga - Asset Integrity Management</p>
-    <p>✅ Complete Hydraulic Analysis (NPSHa, BEP Deviation, Cavitation Risk)</p>
-    <p>✅ Complete Electrical Analysis (Voltage/Current Imbalance, Motor Slip, Load Factor)</p>
-    <p>✅ Transparent Decision Traceability (All calculations visible with standard references)</p>
+    <p>Pump Diagnostic System v2.2 | Pertamina Patra Niaga - Asset Integrity Management</p>
+    <p>✅ Phase Instability REMOVED (not available on Vibrio 4900)</p>
+    <p>✅ Compliance Status integrated into each section (no separate section)</p>
+    <p>✅ Complete Hydraulic/Electrical Analysis with transparent calculations</p>
     <p>Standards: ISO 10816-3:2001, API 610 Ed.11, IEC 60034-1:2017, ISO 15243:2017, ISO 45001:2018</p>
     <p>© 2026 Pertamina Patra Niaga. All rights reserved.</p>
 </div>
