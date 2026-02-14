@@ -505,36 +505,36 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         
         # === FFT FAULT DETECTION ===
         # STEP 3: FFT FAULT DETECTION (REVISED - Tanpa Phase)
-is_2lf_dominant = abs(peak3_freq - 100.0) < 5.0 and peak3_amp > 0.5 * peak1_amp
-is_1x_dominant = abs(peak1_freq - fundamental) < 0.1 * fundamental and peak1_amp > 0.8 * (peak1_amp + peak2_amp + peak3_amp)
-
-# Electrical Unbalance Detection (tanpa phase)
-if is_2lf_dominant and v_imbalance > 2.0:
-    faults.append({
-        "type": "ELECTRICAL UNBALANCE",
-        "confidence": 92,
-        "evidence": [
-            f"2×Line Frequency dominant di {peak3_freq:.1f} Hz ({peak3_amp:.1f} mm/s)",
-            f"Voltage imbalance {v_imbalance:.1f}% > 2% limit (IEC 60034-1 §6.3)",
-            "Diagnosis based on 2LF signature + voltage imbalance (phase not required for screening)"
-        ],
-        "severity": "WARNING",
-        "standard": "ISO 13373-2 Clause 5.4.3 + IEC 60034-1 §6.3"
-    })
-
-# Mechanical Unbalance Detection (tanpa phase)
-elif is_1x_dominant and v_imbalance < 2.0:
-    faults.append({
-        "type": "MECHANICAL UNBALANCE",
-        "confidence": 88,
-        "evidence": [
-            f"1X dominant di {peak1_freq:.1f} Hz ({peak1_amp:.1f} mm/s, {peak1_amp/(peak1_amp+peak2_amp+peak3_amp)*100:.0f}% RMS)",
-            f"Voltage imbalance {v_imbalance:.1f}% < 2% limit",
-            "Diagnosis based on 1X dominance + normal voltage (phase not required for screening)"
-        ],
-        "severity": "WARNING",
-        "standard": "ISO 1940-1:2003 G2.5"
-    })
+        is_2lf_dominant = abs(peak3_freq - 100.0) < 5.0 and peak3_amp > 0.5 * peak1_amp
+        is_1x_dominant = abs(peak1_freq - fundamental) < 0.1 * fundamental and peak1_amp > 0.8 * (peak1_amp + peak2_amp + peak3_amp)
+        
+        # Electrical Unbalance Detection (tanpa phase)
+        if is_2lf_dominant and v_imbalance > 2.0:
+            faults.append({
+                "type": "ELECTRICAL UNBALANCE",
+                "confidence": 92,
+                "evidence": [
+                    f"2×Line Frequency dominant di {peak3_freq:.1f} Hz ({peak3_amp:.1f} mm/s)",
+                    f"Voltage imbalance {v_imbalance:.1f}% > 2% limit (IEC 60034-1 §6.3)",
+                    "Diagnosis based on 2LF signature + voltage imbalance (phase not required for screening)"
+                ],
+                "severity": "WARNING",
+                "standard": "ISO 13373-2 Clause 5.4.3 + IEC 60034-1 §6.3"
+            })
+        
+        # Mechanical Unbalance Detection (tanpa phase)
+        elif is_1x_dominant and v_imbalance < 2.0:
+            faults.append({
+                "type": "MECHANICAL UNBALANCE",
+                "confidence": 88,
+                "evidence": [
+                    f"1X dominant di {peak1_freq:.1f} Hz ({peak1_amp:.1f} mm/s, {peak1_amp/(peak1_amp+peak2_amp+peak3_amp)*100:.0f}% RMS)",
+                    f"Voltage imbalance {v_imbalance:.1f}% < 2% limit",
+                    "Diagnosis based on 1X dominance + normal voltage (phase not required for screening)"
+                ],
+                "severity": "WARNING",
+                "standard": "ISO 1940-1:2003 G2.5"
+            })
         
         # Misalignment (2X dominant + axial vibration)
         is_2x_dominant = abs(peak2_freq - 2*fundamental) < 0.1 * 2*fundamental and peak2_amp > 0.5 * peak1_amp
