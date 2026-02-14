@@ -366,13 +366,14 @@ with tab4:
             # Level 2: Severity Classification
             if "level_2_severity" in diagnosis_result:
                 zone_result = diagnosis_result["level_2_severity"]
+                averages = diagnosis_result.get("averages", {})
                 
                 st.markdown("### 📏 Vibration Severity (ISO 10816-3:2001)")
                 
                 col20, col21, col22 = st.columns(3)
                 
                 with col20:
-                    zone_color = zone_result["status_color"]
+                    zone_color = zone_result.get("status_color", "info")
                     if zone_color == "success":
                         st.success(f"Zone {zone_result['zone']}")
                     elif zone_color == "warning":
@@ -383,14 +384,16 @@ with tab4:
                         st.info(f"Zone {zone_result['zone']}")
                 
                 with col21:
-                    st.metric("Max Velocity", f"{zone_result['max_velocity']:.2f} mm/s")
+                    max_velocity = averages.get("max_velocity", 0)
+                    st.metric("Max Velocity", f"{max_velocity:.2f} mm/s")
                 
                 with col22:
-                    st.metric("Direction", diagnosis_result["averages"]["max_direction"])
+                    max_direction = averages.get("max_direction", "Unknown")
+                    st.metric("Direction", max_direction)
                 
-                st.caption(f"Foundation: {zone_result['foundation_type']}")
-                st.caption(f"Zone B Limit: {zone_result['limit_b']:.1f} mm/s | Zone C Limit: {zone_result['limit_c']:.1f} mm/s")
-                st.caption(f"Standard: {zone_result['standard']}")
+                st.caption(f"Foundation: {zone_result.get('foundation_type', 'Unknown')}")
+                st.caption(f"Zone B Limit: {zone_result.get('limit_b', 0):.1f} mm/s | Zone C Limit: {zone_result.get('limit_c', 0):.1f} mm/s")
+                st.caption(f"Standard: {zone_result.get('standard', 'Unknown')}")
             
             st.markdown("---")
             
@@ -400,15 +403,18 @@ with tab4:
                 
                 st.markdown("### 🔍 Primary Diagnosis (Bayesian Fusion)")
                 
-                st.success(f"**{bayesian['primary_fault']}**")
-                st.progress(int(bayesian['primary_confidence']))
-                st.caption(f"Confidence: {bayesian['primary_confidence']:.0f}%")
-                st.caption(f"Evidence: {bayesian['evidence_summary']}")
+                st.success(f"**{bayesian.get('primary_fault', 'Unknown')}**")
+                confidence = bayesian.get('primary_confidence', 0)
+                st.progress(int(confidence))
+                st.caption(f"Confidence: {confidence:.0f}%")
+                st.caption(f"Evidence: {bayesian.get('evidence_summary', 'No evidence available')}")
                 
-                if bayesian["secondary_faults"]:
+                if bayesian.get("secondary_faults"):
                     with st.expander("Secondary Faults"):
                         for fault in bayesian["secondary_faults"][:2]:
-                            st.write(f"• {fault['fault_type']} ({fault['posterior_probability']:.0f}% confidence)")
+                            fault_type = fault.get('fault_type', 'Unknown')
+                            posterior_prob = fault.get('posterior_probability', 0)
+                            st.write(f"• {fault_type} ({posterior_prob:.0f}% confidence)")
             
             st.markdown("---")
             
@@ -421,16 +427,21 @@ with tab4:
                 col23, col24, col25 = st.columns(3)
                 
                 with col23:
-                    st.metric("Stage", f"{bearing['stage']}")
+                    stage = bearing.get('stage', 0)
+                    st.metric("Stage", f"{stage}")
                 
                 with col24:
-                    st.metric("HF 5-16 kHz", f"{bearing['hf_value']:.2f} g")
+                    hf_value = bearing.get('hf_value', 0)
+                    st.metric("HF 5-16 kHz", f"{hf_value:.2f} g")
                 
                 with col25:
-                    st.metric("Temp Rise", f"{bearing['temp_rise']:.0f}°C")
+                    temp_rise = bearing.get('temp_rise', 0)
+                    st.metric("Temp Rise", f"{temp_rise:.0f}°C")
                 
-                st.info(f"**Condition**: {bearing['condition']}")
-                st.caption(f"Recommendation: {bearing['recommendation']}")
+                condition = bearing.get('condition', 'Unknown')
+                st.info(f"**Condition**: {condition}")
+                recommendation = bearing.get('recommendation', 'No recommendation')
+                st.caption(f"Recommendation: {recommendation}")
             
             st.markdown("---")
             
@@ -443,22 +454,31 @@ with tab4:
                 col26, col27, col28 = st.columns(3)
                 
                 with col26:
-                    risk_color = "🔴" if risk['risk_level'] == "CRITICAL" else "🟠" if risk['risk_level'] == "HIGH" else "🟡" if risk['risk_level'] == "MEDIUM" else "🟢"
-                    st.metric("Risk Level", f"{risk_color} {risk['risk_level']}")
+                    risk_level = risk.get('risk_level', 'Unknown')
+                    risk_color = "🔴" if risk_level == "CRITICAL" else "🟠" if risk_level == "HIGH" else "🟡" if risk_level == "MEDIUM" else "🟢"
+                    st.metric("Risk Level", f"{risk_color} {risk_level}")
                 
                 with col27:
-                    st.metric("MTBF Estimation", f"{risk['mtbf_days']} days")
+                    mtbf_days = risk.get('mtbf_days', 0)
+                    st.metric("MTBF Estimation", f"{mtbf_days} days")
                 
                 with col28:
-                    st.metric("Timeline", risk['action_timeline'])
+                    action_timeline = risk.get('action_timeline', 'Unknown')
+                    st.metric("Timeline", action_timeline)
                 
                 st.markdown("**Action Items:**")
-                for i, rec in enumerate(risk["recommendations"], 1):
-                    priority_emoji = "🔴" if rec['priority'] == "CRITICAL" else "🟠" if rec['priority'] == "HIGH" else "🟡" if rec['priority'] == "MEDIUM" else "🟢" if rec['priority'] == "LOW" else "🔵"
+                recommendations = risk.get("recommendations", [])
+                for i, rec in enumerate(recommendations, 1):
+                    priority = rec.get('priority', 'Unknown')
+                    priority_emoji = "🔴" if priority == "CRITICAL" else "🟠" if priority == "HIGH" else "🟡" if priority == "MEDIUM" else "🟢" if priority == "LOW" else "🔵"
+                    action = rec.get('action', 'No action')
+                    timeline = rec.get('timeline', 'Unknown')
                     
-                    with st.expander(f"{priority_emoji} {i}. {rec['action']} ({rec['timeline']})"):
-                        st.write(f"**Details:** {rec['details']}")
-                        st.write(f"**Standard:** {rec['standard']}")
+                    with st.expander(f"{priority_emoji} {i}. {action} ({timeline})"):
+                        details = rec.get('details', 'No details')
+                        st.write(f"**Details:** {details}")
+                        standard = rec.get('standard', 'No standard')
+                        st.write(f"**Standard:** {standard}")
             
             st.markdown("---")
             
@@ -471,23 +491,28 @@ with tab4:
                 col29, col30, col31, col32 = st.columns(4)
                 
                 with col29:
-                    iso_status = "✅" if comp['iso_10816_3'] == "COMPLIANT" else "⚠️" if comp['iso_10816_3'] == "WARNING" else "❌"
-                    st.metric("ISO 10816-3", f"{iso_status} {comp['iso_10816_3']}")
+                    iso_10816_3 = comp.get('iso_10816_3', 'Unknown')
+                    iso_status = "✅" if iso_10816_3 == "COMPLIANT" else "⚠️" if iso_10816_3 == "WARNING" else "❌"
+                    st.metric("ISO 10816-3", f"{iso_status} {iso_10816_3}")
                 
                 with col30:
-                    iec_status = "✅" if comp['iec_60034_1'] == "COMPLIANT" else "❌"
-                    st.metric("IEC 60034-1", f"{iec_status} {comp['iec_60034_1']}")
+                    iec_60034_1 = comp.get('iec_60034_1', 'Unknown')
+                    iec_status = "✅" if iec_60034_1 == "COMPLIANT" else "❌"
+                    st.metric("IEC 60034-1", f"{iec_status} {iec_60034_1}")
                 
                 with col31:
-                    api_status = "✅" if comp['api_610'] == "COMPLIANT" else "⚠️" if comp['api_610'] == "WARNING" else "❌"
-                    st.metric("API 610", f"{api_status} {comp['api_610']}")
+                    api_610 = comp.get('api_610', 'Unknown')
+                    api_status = "✅" if api_610 == "COMPLIANT" else "⚠️" if api_610 == "WARNING" else "❌"
+                    st.metric("API 610", f"{api_status} {api_610}")
                 
                 with col32:
-                    iso15243_status = "✅" if comp['iso_15243'] == "COMPLIANT" else "⚠️" if comp['iso_15243'] == "WARNING" else "❌"
-                    st.metric("ISO 15243", f"{iso15243_status} {comp['iso_15243']}")
+                    iso_15243 = comp.get('iso_15243', 'Unknown')
+                    iso15243_status = "✅" if iso_15243 == "COMPLIANT" else "⚠️" if iso_15243 == "WARNING" else "❌"
+                    st.metric("ISO 15243", f"{iso15243_status} {iso_15243}")
                 
-                overall_status = "✅ COMPLIANT" if comp['overall_status'] == "COMPLIANT" else "❌ NON-COMPLIANT"
-                st.metric("Overall Status", overall_status)
+                overall_status = comp.get('overall_status', 'Unknown')
+                overall_emoji = "✅ COMPLIANT" if overall_status == "COMPLIANT" else "❌ NON-COMPLIANT"
+                st.metric("Overall Status", overall_emoji)
             
             st.markdown("---")
             
@@ -504,7 +529,7 @@ with tab4:
                     st.download_button(
                         label="⬇️ Download Text Report",
                         data=report_text,
-                        file_name=f"pump_diagnostic_{asset_info['asset_id']}_{datetime.now().strftime('%Y%m%d')}.txt",
+                        file_name=f"pump_diagnostic_{asset_info.get('asset_id', 'UNKNOWN')}_{datetime.now().strftime('%Y%m%d')}.txt",
                         mime="text/plain"
                     )
             
@@ -516,7 +541,7 @@ with tab4:
                     st.download_button(
                         label="⬇️ Download JSON Report",
                         data=report_json,
-                        file_name=f"pump_diagnostic_{asset_info['asset_id']}_{datetime.now().strftime('%Y%m%d')}.json",
+                        file_name=f"pump_diagnostic_{asset_info.get('asset_id', 'UNKNOWN')}_{datetime.now().strftime('%Y%m%d')}.json",
                         mime="application/json"
                     )
             
