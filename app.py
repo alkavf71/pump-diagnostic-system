@@ -760,7 +760,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         st.markdown("---")
         
         # Primary Diagnosis (FFT)
-        st.markdown("### 🔍 (FFT Signature Analysis")
+        st.markdown("### 🔍 FFT Signature Analysis")
         
         if primary_fault["type"] != "NO SIGNIFICANT FAULT DETECTED":
             for evidence in primary_fault.get("evidence", []):
