@@ -713,7 +713,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         st.markdown("---")
         
         # ELECTRICAL ANALYSIS (WITH COMPLIANCE BADGE)
-        st.markdown("### ⚡ Electrical Performance Analysis (IEC 60034-1)")
+        st.markdown("### ⚡ Electrical Performance Analysis")
         
         col21, col22, col23, col24 = st.columns(4)
         with col21:
