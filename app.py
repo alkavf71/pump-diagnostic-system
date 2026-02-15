@@ -670,7 +670,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
         st.markdown("---")
         
         # HYDRAULIC ANALYSIS (WITH COMPLIANCE BADGE)
-        st.markdown("### 💧 Hydraulic Performance Analysis (API 610 Clause 7.3)")
+        st.markdown("### 💧 Hydraulic Performance Analysis")
         
         col18, col19, col20 = st.columns(3)
         with col18:
