@@ -1,7 +1,5 @@
 """
 Pump Diagnostic System - Pertamina Patra Niaga
-SINGLE PAGE VERSION - All inputs in one page, diagnosis at bottom
-FIXED: Phase Instability REMOVED + Compliance Status integrated into each section
 """
 
 import streamlit as st
@@ -942,9 +940,6 @@ Standards       : ISO 10816-3:2001, API 610 Ed.11, IEC 60034-1:2017, ISO 15243:2
 st.markdown("""
 <div class="footer">
     <p>Pump Diagnostic System v2.2 | Pertamina Patra Niaga - Asset Integrity Management</p>
-    <p>✅ Phase Instability REMOVED (not available on Vibrio 4900)</p>
-    <p>✅ Compliance Status integrated into each section (no separate section)</p>
-    <p>✅ Complete Hydraulic/Electrical Analysis with transparent calculations</p>
     <p>Standards: ISO 10816-3:2001, API 610 Ed.11, IEC 60034-1:2017, ISO 15243:2017, ISO 45001:2018</p>
     <p>© 2026 Pertamina Patra Niaga. All rights reserved.</p>
 </div>
