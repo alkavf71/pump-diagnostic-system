@@ -209,7 +209,7 @@ with col3:
 # ============================================
 # SECTION 2: Layer 1 - Overall Screening (REVISED)
 # ============================================
-st.markdown('<p class="section-header">2. Layer 1: Overall Screening (Velocity/Acceleration/Temperature)</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-header">2. Layer 1: Overall Screening (Velocity/Acceleration)</p>', unsafe_allow_html=True)
 st.info("💡 **Prinsip Efisiensi**: Data dikumpulkan LENGKAP sesuai checklist lapangan. Analisis trigger-based dilakukan di kantor.")
 
 col4, col5, col6 = st.columns(3)
@@ -337,6 +337,10 @@ for i, loc in enumerate(locations):
     cols = st.columns(3)
     
     for j, dir_name in enumerate(directions):
+        # Skip axial for NDE bearings (B2 and B4) as per checklist
+        if (loc in ["Motor NDE (B2)", "Pump NDE (B4)"] and dir_name == "Axial (A)"):
+            continue
+            
         with cols[j]:
             st.caption(f"{dir_name}")
             
@@ -528,36 +532,41 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             # Ekstrak amplitudo 1X, 2X untuk setiap lokasi/arah
             for loc_name, loc_key in loc_map.items():
                 for dir_key in ['h', 'v', 'a']:
-                    peaks = peaks_data[loc_name][dir_key]
+                    # Skip axial untuk NDE bearings
+                    if (loc_name in ["Motor NDE (B2)", "Pump NDE (B4)"] and dir_key == 'a'):
+                        continue
                     
-                    # Cari peak mendekati 1X (±5%)
-                    a1x = 0
-                    for p in peaks:
-                        if abs(p['freq'] - fundamental_hz) / fundamental_hz <= 0.05:
-                            a1x = p['amp']
-                            break
-                    
-                    # Cari peak mendekati 2X (±5%)
-                    a2x = 0
-                    for p in peaks:
-                        if abs(p['freq'] - 2*fundamental_hz) / (2*fundamental_hz) <= 0.05:
-                            a2x = p['amp']
-                            break
-                    
-                    features[loc_key][dir_key] = {
-                        'a1x': a1x,
-                        'a2x': a2x,
-                        'r2x_1x': a2x / a1x if a1x > 0.1 else 0
-                    }
+                    if dir_key in peaks_data[loc_name]:
+                        peaks = peaks_data[loc_name][dir_key]
+                        
+                        # Cari peak mendekati 1X (±5%)
+                        a1x = 0
+                        for p in peaks:
+                            if abs(p['freq'] - fundamental_hz) / fundamental_hz <= 0.05:
+                                a1x = p['amp']
+                                break
+                        
+                        # Cari peak mendekati 2X (±5%)
+                        a2x = 0
+                        for p in peaks:
+                            if abs(p['freq'] - 2*fundamental_hz) / (2*fundamental_hz) <= 0.05:
+                                a2x = p['amp']
+                                break
+                        
+                        features[loc_key][dir_key] = {
+                            'a1x': a1x,
+                            'a2x': a2x,
+                            'r2x_1x': a2x / a1x if a1x > 0.1 else 0
+                        }
             
             # Hitung skor fault
             # Skor Misalignment: 2X dominan di aksial DE
             mis_score = 0
             mis_location = None
-            if features['motor_de']['a']['r2x_1x'] > 1.5:
+            if 'a' in features['motor_de'] and features['motor_de']['a']['r2x_1x'] > 1.5:
                 mis_score += 2.0
                 mis_location = "motor"
-            if features['pump_de']['a']['r2x_1x'] > 1.5:
+            if 'a' in features['pump_de'] and features['pump_de']['a']['r2x_1x'] > 1.5:
                 mis_score += 2.0
                 mis_location = "pump" if mis_score == 2.0 else "coupling"
             
@@ -586,7 +595,7 @@ if st.button("🔍 GENERATE DIAGNOSIS", type="primary", use_container_width=True
             harmonic_count = 0
             for loc in loc_map.values():
                 for dir_key in ['h', 'v', 'a']:
-                    if features[loc][dir_key]['a1x'] > 0.5:
+                    if dir_key in features[loc] and features[loc][dir_key]['a1x'] > 0.5:
                         harmonic_count += 1
             if harmonic_count > 6:  # >50% dari 12 arah
                 loo_score = 3.0
