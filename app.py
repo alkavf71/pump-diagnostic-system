@@ -926,10 +926,11 @@ if st.session_state.screening_done:
                 }
                 
                 if layer2_result['primary_fault'] != 'no_significant_fault':
-                    fault_emoji = "🔴" if layer2_result['severity'] == 'Unacceptable' else "🟠" if layer2_result['severity'] == 'Unsatisfactory' else "🟡"
-                    st.warning(f"{fault_emoji} **{fault_display[layer2_result['primary_fault']]}** pada **{layer2_result['fault_location'].upper() if layer2_result['fault_location'] else 'N/A'}**")
-                    st.progress(min(layer2_result['confidence'], 95))
-                    st.caption(f"Confidence: {layer2_result['confidence']}% | Severity: {layer2_result['severity']}")
+                fault_emoji = "🔴" if layer2_result['severity'] == 'Unacceptable' else "🟠" if layer2_result['severity'] == 'Unsatisfactory' else "🟡"
+                st.warning(f"{fault_emoji} **{fault_display[layer2_result['primary_fault']]}** pada **{layer2_result['fault_location'].upper() if layer2_result['fault_location'] else 'N/A'}**")
+                # ✅ FIXED: Convert percentage to fraction (0.0-1.0)
+                st.progress(min(layer2_result['confidence'], 95) / 100.0)  # <-- PERUBAHAN DI SINI
+                st.caption(f"Confidence: {layer2_result['confidence']}% | Severity: {layer2_result['severity']}")
                     
                     # Evidence based on fault type
                     evidence_list = []
@@ -979,20 +980,20 @@ if st.session_state.screening_done:
                 # DISPLAY LAYER 3 RESULTS (IF APPLICABLE)
                 # ============================================
                 if layer3_result and need_layer3:
-                    st.markdown("### ⚡ Layer 3: Advanced Differentiation Results")
-                    
-                    if layer3_result['unbalance_type'] == 'mechanical':
-                        st.success(f"✅ **MECHANICAL UNBALANCE** terkonfirmasi")
-                        st.progress(layer3_result['confidence'])
-                    elif layer3_result['unbalance_type'] == 'electrical':
-                        st.error(f"⚠️ **ELECTRICAL UNBALANCE** terkonfirmasi")
-                        st.progress(layer3_result['confidence'])
-                    elif layer3_result['unbalance_type'] == 'ambiguous':
-                        st.warning(f"❓ **UNBALANCE TYPE AMBIGUOUS**")
-                        st.progress(layer3_result['confidence'])
-                    else:
-                        st.info(f"ℹ️ **COAST-DOWN TEST TIDAK DILAKUKAN**")
-                        st.progress(layer3_result['confidence'])
+                st.markdown("### ⚡ Layer 3: Advanced Differentiation Results")
+                
+                if layer3_result['unbalance_type'] == 'mechanical':
+                    st.success(f"✅ **MECHANICAL UNBALANCE** terkonfirmasi")
+                    st.progress(layer3_result['confidence'] / 100.0)  # <-- PERUBAHAN DI SINI
+                elif layer3_result['unbalance_type'] == 'electrical':
+                    st.error(f"⚠️ **ELECTRICAL UNBALANCE** terkonfirmasi")
+                    st.progress(layer3_result['confidence'] / 100.0)  # <-- PERUBAHAN DI SINI
+                elif layer3_result['unbalance_type'] == 'ambiguous':
+                    st.warning(f"❓ **UNBALANCE TYPE AMBIGUOUS**")
+                    st.progress(layer3_result['confidence'] / 100.0)  # <-- PERUBAHAN DI SINI
+                else:
+                    st.info(f"ℹ️ **COAST-DOWN TEST TIDAK DILAKUKAN**")
+                    st.progress(layer3_result['confidence'] / 100.0)  # <-- PERUBAHAN DI SINI
                     
                     st.markdown("**Evidence Coast-Down Analysis:**")
                     for ev in layer3_result['evidence']:
